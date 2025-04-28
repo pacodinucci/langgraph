@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Appointment {
+  id             String        @id @default(uuid())
+  treatment      String
+  zones          String[]
+  date           DateTime
+  hour           String
+  duration       Int
+  customerId     String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  professionalId String?
+  Customer       Customer?     @relation(fields: [customerId], references: [id])
+  Professional   Professional? @relation(fields: [professionalId], references: [id])
+  Calendar       Calendar[]
+}
+
+model Calendar {
+  id        String   @id @default(uuid())
+  date      DateTime
+  hour      String
+  treatment String
+  status    String   @default("reserved")
+
+  appointmentId  String
+  professionalId String?
+  customerId     String
+
+  Appointment  Appointment   @relation(fields: [appointmentId], references: [id])
+  Professional Professional? @relation(fields: [professionalId], references: [id])
+  Customer     Customer      @relation(fields: [customerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([date, hour, professionalId])
+}
+
+model Chat {
+  id        String    @id
+  number    String
+  status    String?
+  createdAt DateTime  @default(now())
+  Message   Message[]
+}
+
+model Combo {
+  id         String   @id
+  title      String
+  price      Int
+  smallZones Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Zone       Zone[]   @relation("ComboZones")
+}
+
+model Customer {
+  id          String        @id @default(uuid())
+  name        String
+  phone       String
+  email       String
+  createdAt   DateTime      @default(now())
+  Appointment Appointment[]
+  Calendar    Calendar[]
+}
+
+model Directions {
+  id        String   @id
+  content   String
+  createdAt DateTime @default(now())
+  name      String
+}
+
+model Message {
+  id        String   @id
+  number    String
+  content   String
+  role      String
+  createdAt DateTime @default(now())
+  chatId    String
+  Chat      Chat     @relation(fields: [chatId], references: [id])
+}
+
+model Professional {
+  id          String        @id
+  name        String
+  specialty   String?
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime
+  Appointment Appointment[]
+  Calendar    Calendar[]
+}
+
+model Zone {
+  id        String   @id
+  code      String   @unique
+  title     String
+  zone      String
+  smallZone Boolean
+  mainZone  Boolean
+  price     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  order     Int?
+  Combo     Combo[]  @relation("ComboZones")
+}
+
+model accounts {
+  id                  String  @id
+  user_id             String
+  type                String
+  provider            String
+  provider_account_id String
+  refresh_token       String?
+  access_token        String?
+  expires_at          Int?
+  token_type          String?
+  scope               String?
+  id_token            String?
+  session_state       String?
+  users               users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([provider, provider_account_id])
+}
+
+model users {
+  id             String     @id
+  name           String?
+  email          String?    @unique
+  email_verified DateTime?
+  image          String?
+  password       String?
+  role           UserRole   @default(USER)
+  phone          String?
+  accounts       accounts[]
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
