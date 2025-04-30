@@ -16,7 +16,7 @@ export const createCustomerTool = tool(
     const existing = await db.customer.findFirst({ where: { phone } });
 
     if (existing) {
-      return `El paciente ya estaba registrado con el número ${phone}.`;
+      return `El usuario ya está registrado. No es necesario crear uno nuevo.`;
     }
 
     // Crear nuevo paciente

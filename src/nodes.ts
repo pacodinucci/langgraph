@@ -45,7 +45,8 @@ export async function queryOrRespond(
       - Si el paciente solo realiza consultas generales (sobre servicios, precios, tratamientos, horarios, etc.), no debes registrar nada ni usar herramientas de reserva.
       - Si el paciente quiere reservar y no está registrado, pedile nombre y correo electrónico, y usá create_customer.
       - No inventes información ni completes datos que no fueron pedidos.
-      - Respondé siempre en base al contexto disponible.`
+      - Respondé siempre en base al contexto disponible.
+      - No inventes pasos. Respondé en base estricta al contexto y herramientas.`
   );
 
   const inputMessages = [phoneMsg, rulesMsg, ...state.messages];
@@ -80,8 +81,16 @@ export async function generate(
     }
   }
 
-  const toolMessages = recentToolMessages.reverse();
-  const docsContent = toolMessages.map((msg) => msg.content).join("\n");
+  const toolMessages = recentToolMessages
+    .reverse()
+    .filter((msg) => {
+      if (typeof msg.content === "string") {
+        return !msg.content.toLowerCase().includes("ya está registrado");
+      }
+      return true;
+    })
+    .map((msg) => (typeof msg.content === "string" ? msg.content : ""))
+    .join("\n");
 
   const phone =
     (state.messages[0].additional_kwargs as any)?.metadata?.phone ??
@@ -91,14 +100,16 @@ export async function generate(
     "Eres una asistente llamada Daiana. Tenes que responder en base al contexto, no inventes." +
     `El número de teléfono del paciente es ${phone}. No debés pedirlo.` +
     // "Si el paciente pide reservar turno, y no está registrado, pedile nombre y email y usá create_customer. " +
-    `Siempre que el paciente quiera reservar, verificá si ya está registrado usando el número ${phone} con la herramienta create_customer.` +
-    "Si ya está registrado, continuá con la reserva sin pedirle nombre ni correo." +
+    `Siempre que el paciente quiera reservar, verificá silenciosamente si ya está registrado usando el número ${phone} con la herramienta create_customer. No le digas que vas a hacer esta verificación.` +
+    "Si ya está registrado, continuá con la reserva sin pedirle nombre ni correo y sin mencionar que ya está registrado." +
     "Si no está registrado, pedile su nombre y correo, y luego llamá a create_customer para registrarlo." +
-    "Si el paciente ya está registrado y pide turno, usá book_appointment. " +
+    // "Si el paciente ya está registrado y pide turno, usá book_appointment." +
+    "Si ya tenés el tratamiento, la fecha, la hora y el número del paciente, usá directamente la herramienta book_appointment sin pedir confirmación al paciente ni explicar lo que estás haciendo." +
+    "No tenés que verificar la disponibilidad de turnos hasta que no tengas fecha y hora." +
     "Una vez que estas usando book_appointment no pidas email y nombre, ya los tenés a disposición." +
     "No inventes información. Respondé sólo en base a las herramientas." +
     "\n\n" +
-    docsContent;
+    toolMessages;
 
   const conversationMessages = state.messages.filter(
     (msg) =>

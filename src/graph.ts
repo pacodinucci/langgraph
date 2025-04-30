@@ -16,6 +16,7 @@ export const graph = new StateGraph(MessagesAnnotation)
     __end__: "__end__",
     tools: "tools",
   })
+  .addEdge("tools", "queryOrRespond")
   .addEdge("tools", "generate")
   .addEdge("generate", "__end__")
   .compile({ checkpointer });
