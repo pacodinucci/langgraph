@@ -9,10 +9,10 @@ export const interpretDateTool = tool(
     console.log("🧠 Interpretando fecha:", userExpression);
 
     const formattedToday = today.toLocaleDateString("es-AR", {
-      weekday: "long", // lunes, martes, etc.
-      day: "numeric", // 5
-      month: "long", // mayo
-      year: "numeric", // 2025
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
     });
 
     // Capitalizar primera letra del día (opcional)

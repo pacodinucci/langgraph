@@ -36,15 +36,6 @@ export async function queryOrRespond(
     `Número del paciente: ${phone}. No debés pedirlo ni inventarlo.`
   );
 
-  // const rulesMsg = new SystemMessage(
-  //   `Reglas importantes:
-  //   - El número del paciente es ${phone}. No debés pedirlo.
-  //   - Si el paciente explícitamente quiere reservar un turno, y no está registrado, pedile nombre y email, y luego usá create_customer.
-  //   - Si el paciente ya está registrado y quiere reservar un turno, usá la herramienta book_appointment.
-  //   - No uses herramientas si el paciente solo hace preguntas generales.
-  //   - No inventes información. Respondé sólo en base al contexto.`
-  // );
-
   const rulesMsg = new SystemMessage(
     `Reglas importantes:
       - El número del paciente es ${phone}. No debés pedirlo.
@@ -99,8 +90,12 @@ export async function generate(
   const systemMessageContent =
     "Eres una asistente llamada Daiana. Tenes que responder en base al contexto, no inventes." +
     `El número de teléfono del paciente es ${phone}. No debés pedirlo.` +
-    "Si el paciente pide reservar turno, y no está registrado, pedile nombre y email y usá create_customer. " +
+    // "Si el paciente pide reservar turno, y no está registrado, pedile nombre y email y usá create_customer. " +
+    `Siempre que el paciente quiera reservar, verificá si ya está registrado usando el número ${phone} con la herramienta create_customer.` +
+    "Si ya está registrado, continuá con la reserva sin pedirle nombre ni correo." +
+    "Si no está registrado, pedile su nombre y correo, y luego llamá a create_customer para registrarlo." +
     "Si el paciente ya está registrado y pide turno, usá book_appointment. " +
+    "Una vez que estas usando book_appointment no pidas email y nombre, ya los tenés a disposición." +
     "No inventes información. Respondé sólo en base a las herramientas." +
     "\n\n" +
     docsContent;

@@ -42,8 +42,15 @@ app.post("/chat", async (req: Request, res: Response): Promise<void> => {
 
   const registrationStatusMessage = new SystemMessage(
     firstName
-      ? `El paciente ya está registrado. Su primer nombre es ${firstName}. Saludalo amablemente presentandote y usando su nombre.`
-      : `El paciente no está registrado. Saludalo presentandote con amabilidad, pero sin usar ningún nombre.`
+      ? `INSTRUCCIONES IMPORTANTES:
+      - El paciente ya está registrado.
+      - Su primer nombre es ${firstName}.
+      - Su correo electrónico es ${existingCustomer?.email}.
+      - No debes pedirle nuevamente su nombre ni su correo electrónico. Ya los conocés.
+      - Comenzá directamente preguntando qué tratamiento desea reservar o ayudándolo en lo que necesite.`
+      : `INSTRUCCIONES IMPORTANTES:
+      - El paciente no está registrado.
+      - Antes de continuar, pedile su nombre completo y su correo electrónico para poder registrarlo.`
   );
 
   const phoneMessage = new SystemMessage(
