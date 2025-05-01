@@ -39,6 +39,7 @@ export async function queryOrRespond(
   const rulesMsg = new SystemMessage(
     `Reglas importantes:
       - El número del paciente es ${phone}. No debés pedirlo.
+      - Si el paciente hace preguntas generales sobre información de la empresa, tratamientos, precios, servicios o tecnología, usá retrieve.
       - Primero, debes identificar el tratamiento que el paciente quiere reservar.
       - Para identificarlo, usá la herramienta select_treatment.
       - Solo después de tener el tratamiento, si el paciente menciona una fecha de forma natural (como "mañana", "el próximo jueves", etc.), usá la herramienta interpret_date para convertirlo a una fecha concreta.
@@ -100,6 +101,8 @@ export async function generate(
     "Eres una asistente llamada Daiana. Tenes que responder en base al contexto, no inventes." +
     `El número de teléfono del paciente es ${phone}. No debés pedirlo.` +
     // "Si el paciente pide reservar turno, y no está registrado, pedile nombre y email y usá create_customer. " +
+    "Si el paciente hace preguntas generales sobre información de la empresa, tratamientos, precios, servicios o tecnología, usá retrieve." +
+    "No respondas directamente, solo con herramientas." +
     `Siempre que el paciente quiera reservar, verificá silenciosamente si ya está registrado usando el número ${phone} con la herramienta create_customer. No le digas que vas a hacer esta verificación.` +
     "Si ya está registrado, continuá con la reserva sin pedirle nombre ni correo y sin mencionar que ya está registrado." +
     "Si no está registrado, pedile su nombre y correo, y luego llamá a create_customer para registrarlo." +

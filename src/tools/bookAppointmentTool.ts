@@ -1,8 +1,7 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import db from "../../lib/db";
-import { parse } from "date-fns";
-import { es } from "date-fns/locale";
+import { parseSpanishDate } from "../../lib/parseDate";
 
 // 🔥 Mapeo de tratamientos a cantidad de módulos de 15 minutos
 const treatmentDurations: Record<string, number> = {
@@ -10,18 +9,6 @@ const treatmentDurations: Record<string, number> = {
   "Tratamiento Facial": 4, // 60 minutos
   // Puedes agregar más tratamientos acá
 };
-
-function parseSpanishDate(dateStr: string): Date | null {
-  try {
-    const parsed = parse(dateStr, "d 'de' MMMM 'de' yyyy", new Date(), {
-      locale: es,
-    });
-    return parsed;
-  } catch (error) {
-    console.error("Error al parsear la fecha:", error);
-    return null;
-  }
-}
 
 export const bookAppointmentTool = tool(
   async ({ treatment, zones, date, hour, phone }) => {
