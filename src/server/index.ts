@@ -63,7 +63,7 @@ app.post("/chat", async (req: Request, res: Response): Promise<void> => {
   if (existingCustomer) {
     const now = new Date();
 
-    const upcoming = await db.appointment.findFirst({
+    const upcomingAppointments = await db.appointment.findMany({
       where: {
         customerId: existingCustomer.id,
         date: {
@@ -75,15 +75,16 @@ app.post("/chat", async (req: Request, res: Response): Promise<void> => {
       },
     });
 
-    if (upcoming) {
-      const dateStr = upcoming.date.toLocaleDateString("es-AR", {
+    if (upcomingAppointments.length === 1) {
+      const appt = upcomingAppointments[0];
+      const dateStr = appt.date.toLocaleDateString("es-AR", {
         weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
       });
-      const hour = upcoming.hour;
-      const treatment = upcoming.treatment;
+      const hour = appt.hour;
+      const treatment = appt.treatment;
 
       upcomingAppointmentMessage = new SystemMessage(
         `INFORMACIÓN ADICIONAL:
@@ -91,8 +92,16 @@ app.post("/chat", async (req: Request, res: Response): Promise<void> => {
       - Si el paciente dice "hola", mencioná el turno como parte del saludo y preguntá si desea modificarlo o consultar algo más.
       - Si el paciente pregunta por su turno, respondé con esta información directamente.`
       );
+    } else if (upcomingAppointments.length > 1) {
+      upcomingAppointmentMessage = new SystemMessage(
+        `INFORMACIÓN ADICIONAL:
+      - El paciente tiene más de un turno programado a futuro.
+      - No brindes los detalles específicos de cada uno a menos que te los pida explícitamente.
+      - Si el paciente dice "hola", mencioná que tiene turnos pendientes y preguntá si desea modificar alguno o necesita ayuda.`
+      );
     }
   }
+
   // ------ //
 
   // Inicializar historial si no existe
