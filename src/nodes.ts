@@ -7,12 +7,13 @@ import {
 import { MessagesAnnotation } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 
-import { llm } from "./index";
+import { llm } from "./llm";
 import { retrieve } from "./tools/retrieveTool";
 import { createCustomerTool } from "./tools/createCustomerTool";
 import { bookAppointmentTool } from "./tools/bookAppointmentTool";
 import { interpretDateTool } from "./tools/interpretDateTool";
 import { selectTreatmentTool } from "./tools/selectTreatmentTool";
+import { getUpcomingAppointmentTool } from "./tools/getUpcomingAppointment";
 
 // NODO 1: Decide si responde directamente o llama a un tool
 export async function queryOrRespond(

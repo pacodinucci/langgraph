@@ -20,6 +20,8 @@ export const bookAppointmentTool = tool(
       return "El paciente no está registrado en la base de datos.";
     }
 
+    zones = zones ?? [];
+
     const modules = treatmentDurations[treatment];
     if (!modules) {
       return `No tengo registrada la duración para el tratamiento "${treatment}".`;
@@ -109,6 +111,7 @@ export const bookAppointmentTool = tool(
         .describe("Nombre del tratamiento que el paciente quiere reservar."),
       zones: z
         .array(z.string())
+        .optional()
         .describe("Zonas que quiere tratar (si aplica)."),
       date: z
         .string()

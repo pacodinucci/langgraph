@@ -57,6 +57,44 @@ app.post("/chat", async (req: Request, res: Response): Promise<void> => {
     `Número de teléfono del paciente: ${sessionId}. No debés pedirlo. Usalo directamente cuando sea necesario.`
   );
 
+  // Verificación de próximos turnos
+  let upcomingAppointmentMessage: SystemMessage | null = null;
+
+  if (existingCustomer) {
+    const now = new Date();
+
+    const upcoming = await db.appointment.findFirst({
+      where: {
+        customerId: existingCustomer.id,
+        date: {
+          gte: now,
+        },
+      },
+      orderBy: {
+        date: "asc",
+      },
+    });
+
+    if (upcoming) {
+      const dateStr = upcoming.date.toLocaleDateString("es-AR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      const hour = upcoming.hour;
+      const treatment = upcoming.treatment;
+
+      upcomingAppointmentMessage = new SystemMessage(
+        `INFORMACIÓN ADICIONAL:
+      - El paciente tiene un turno reservado para el ${dateStr} a las ${hour} hs para un tratamiento de ${treatment}.
+      - Si el paciente dice "hola", mencioná el turno como parte del saludo y preguntá si desea modificarlo o consultar algo más.
+      - Si el paciente pregunta por su turno, respondé con esta información directamente.`
+      );
+    }
+  }
+  // ------ //
+
   // Inicializar historial si no existe
   if (!conversations[sessionId]) {
     conversations[sessionId] = [];
@@ -79,6 +117,7 @@ app.post("/chat", async (req: Request, res: Response): Promise<void> => {
         messages: [
           phoneMessage,
           registrationStatusMessage,
+          ...(upcomingAppointmentMessage ? [upcomingAppointmentMessage] : []),
           ...conversations[sessionId],
         ],
       },
