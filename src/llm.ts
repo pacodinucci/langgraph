@@ -6,7 +6,8 @@ import "dotenv/config";
 import { loadAndSplitDocs } from "./loadAndSplit";
 
 export const llm = new ChatOpenAI({
-  model: "gpt-4-0613",
+  // model: "gpt-4-0613",
+  model: "gpt-4.1-2025-04-14",
   // model: "gpt-3.5-turbo-0125",
   temperature: 0,
 });
