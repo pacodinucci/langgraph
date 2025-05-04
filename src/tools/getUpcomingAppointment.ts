@@ -17,6 +17,7 @@ export const getUpcomingAppointmentTool = tool(
     const upcoming = await db.appointment.findFirst({
       where: {
         customerId: customer.id,
+        isCanceled: false,
         date: {
           gte: today,
         },

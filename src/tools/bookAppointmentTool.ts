@@ -46,6 +46,7 @@ export const bookAppointmentTool = tool(
     const existingAppointments = await db.appointment.findMany({
       where: {
         date: parsedDate,
+        isCanceled: false,
         hour: {
           lte: appointmentEnd.toTimeString().slice(0, 5),
         },

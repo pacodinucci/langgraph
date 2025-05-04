@@ -14,6 +14,7 @@ export const identifyAppointmentToRescheduleTool = tool(
     const now = new Date();
     const where: any = {
       customerId: customer.id,
+      isCanceled: false,
       date: { gte: now },
     };
 

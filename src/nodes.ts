@@ -15,7 +15,8 @@ import { interpretDateTool } from "./tools/interpretDateTool";
 import { selectTreatmentTool } from "./tools/selectTreatmentTool";
 import { getUpcomingAppointmentTool } from "./tools/getUpcomingAppointment";
 import { rescheduleAppointmentTool } from "./tools/rescheduleAppointmentTool";
-import { identifyAppointmentToRescheduleTool } from "./tools/identifyAppointmentToReshudeleTool";
+import { identifyAppointmentToRescheduleTool } from "./tools/identifyAppointmentToRescheduleTool";
+import { cancelAppointmentTool } from "./tools/cancelAppointmentTool";
 
 // NODO 1: Decide si responde directamente o llama a un tool
 export async function queryOrRespond(
@@ -35,6 +36,7 @@ export async function queryOrRespond(
     selectTreatmentTool,
     identifyAppointmentToRescheduleTool,
     rescheduleAppointmentTool,
+    cancelAppointmentTool,
   ]);
 
   const phoneMsg = new SystemMessage(
@@ -50,9 +52,15 @@ export async function queryOrRespond(
     - Si el paciente quiere reservar y no está registrado, pedile nombre y email, y usá create_customer.
     - Si el paciente quiere cambiar, mover, reprogramar o modificar un turno:
       • Primero, usá identify_appointment_to_reschedule para identificar cuál turno quiere modificar.
-      • Luego, cuando ya tengas la nueva fecha y hora, usá reschedule_appointment.
-      • No llames a reschedule_appointment hasta tener la nueva fecha y hora.
-    - Nunca uses book_appointment para modificar un turno existente.
+      • Luego, preguntá por la nueva fecha y la nueva hora.
+      • No llames a reschedule_appointment hasta tener la nueva fecha **y una hora explícita en formato HH:mm (por ejemplo, "10:30")**.
+      • Si el paciente dice "la misma hora", "igual que antes", u otra frase ambigua, pedile que indique la hora exacta.
+      • Solo llamá a reschedule_appointment cuando tengas fecha y hora clara y correcta.
+    - Si el paciente quiere cancelar un turno:
+      • Primero, usá identify_appointment_to_reschedule para identificar cuál turno quiere cancelar.
+      • Luego, usá cancel_appointment para cancelarlo definitivamente.
+    - No respondas con la llamada a identify_appointment_to_reschedule. Solo llamala y esperá la respuesta.
+    - Nunca uses book_appointment para modificar o cancelar un turno existente.
     - No inventes información ni pasos. Respondé en base a las herramientas disponibles.`
   );
 
@@ -73,6 +81,7 @@ export const tools = new ToolNode([
   selectTreatmentTool,
   identifyAppointmentToRescheduleTool,
   rescheduleAppointmentTool,
+  cancelAppointmentTool,
 ]);
 
 // NODO 3: Genera respuesta final usando los ToolMessages
@@ -105,23 +114,6 @@ export async function generate(
     (state.messages[0].additional_kwargs as any)?.metadata?.phone ??
     "desconocido";
 
-  // const systemMessageContent =
-  //   "Eres una asistente llamada Daiana. Tenes que responder en base al contexto, no inventes." +
-  //   `El número de teléfono del paciente es ${phone}. No debés pedirlo.` +
-  //   // "Si el paciente pide reservar turno, y no está registrado, pedile nombre y email y usá create_customer. " +
-  //   "Si el paciente hace preguntas generales sobre información de la empresa, tratamientos, precios, servicios o tecnología, usá retrieve." +
-  //   "No respondas directamente, solo con herramientas." +
-  //   `Siempre que el paciente quiera reservar, verificá silenciosamente si ya está registrado usando el número ${phone} con la herramienta create_customer. No le digas que vas a hacer esta verificación.` +
-  //   "Si ya está registrado, continuá con la reserva sin pedirle nombre ni correo y sin mencionar que ya está registrado." +
-  //   "Si no está registrado, pedile su nombre y correo, y luego llamá a create_customer para registrarlo." +
-  //   // "Si el paciente ya está registrado y pide turno, usá book_appointment." +
-  //   "Si ya tenés el tratamiento, la fecha, la hora y el número del paciente, usá directamente la herramienta book_appointment sin pedir confirmación al paciente ni explicar lo que estás haciendo." +
-  //   "No tenés que verificar la disponibilidad de turnos hasta que no tengas fecha y hora." +
-  //   "Una vez que estas usando book_appointment no pidas email y nombre, ya los tenés a disposición." +
-  //   "No inventes información. Respondé sólo en base a las herramientas." +
-  //   "\n\n" +
-  //   toolMessages;
-
   const systemMessageContent =
     "Eres una asistente llamada Daiana. Respondé solo en base al contexto, sin inventar ni asumir." +
     `El número del paciente es ${phone}. No debés pedirlo.` +
@@ -130,8 +122,10 @@ export async function generate(
     "Si quiere cambiar un turno, primero identificá el turno con identify_appointment_to_reschedule." +
     "Cuando el paciente te dé una nueva fecha y hora, recién ahí usá reschedule_appointment." +
     "No uses reschedule_appointment si no tenés la nueva fecha y hora." +
+    "Si el paciente quiere cancelar un turno, primero usá identify_appointment_to_reschedule para saber cuál quiere cancelar y luego cancel_appointment." +
+    "No respondas con la llamada a identify_appointment_to_reschedule. Solo llamala y esperá la respuesta." +
     "No uses book_appointment para turnos que ya existen." +
-    "Verificá si el paciente está registrado usando create_customer de forma silenciosa con el número." +
+    `Verificá si el paciente está registrado usando create_customer de forma silenciosa con el número.` +
     "No pidas ni nombre ni email si el paciente ya está registrado." +
     "Respondé solo con herramientas. No inventes pasos." +
     "\n\n" +

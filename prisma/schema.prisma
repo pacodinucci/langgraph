@@ -18,6 +18,7 @@ model Appointment {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   professionalId String?
+  isCanceled     Boolean       @default(false)
   Customer       Customer?     @relation(fields: [customerId], references: [id])
   Professional   Professional? @relation(fields: [professionalId], references: [id])
   Calendar       Calendar[]

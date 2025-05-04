@@ -66,6 +66,7 @@ app.post("/chat", async (req: Request, res: Response): Promise<void> => {
     const upcomingAppointments = await db.appointment.findMany({
       where: {
         customerId: existingCustomer.id,
+        isCanceled: false,
         date: {
           gte: now,
         },
