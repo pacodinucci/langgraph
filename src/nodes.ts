@@ -17,6 +17,7 @@ import { getUpcomingAppointmentTool } from "./tools/getUpcomingAppointment";
 import { rescheduleAppointmentTool } from "./tools/rescheduleAppointmentTool";
 import { identifyAppointmentToRescheduleTool } from "./tools/identifyAppointmentToRescheduleTool";
 import { cancelAppointmentTool } from "./tools/cancelAppointmentTool";
+import { suggestAvailableSlotsTool } from "./tools/suggestAvailableSlotsTool";
 
 // NODO 1: Decide si responde directamente o llama a un tool
 export async function queryOrRespond(
@@ -37,6 +38,7 @@ export async function queryOrRespond(
     identifyAppointmentToRescheduleTool,
     rescheduleAppointmentTool,
     cancelAppointmentTool,
+    suggestAvailableSlotsTool,
   ]);
 
   const phoneMsg = new SystemMessage(
@@ -56,6 +58,9 @@ export async function queryOrRespond(
       • No llames a reschedule_appointment hasta tener la nueva fecha **y una hora explícita en formato HH:mm (por ejemplo, "10:30")**.
       • Si el paciente dice "la misma hora", "igual que antes", u otra frase ambigua, pedile que indique la hora exacta.
       • Solo llamá a reschedule_appointment cuando tengas fecha y hora clara y correcta.
+    - Si el paciente pide un turno pero ese horario no está disponible:
+      • Preguntá si tiene preferencias de día, franja horaria (mañana/tarde/noche) u horarios específicos.
+      • Luego usá suggest_available_slots para sugerir turnos compatibles.
     - Si el paciente quiere cancelar un turno:
       • Primero, usá identify_appointment_to_reschedule para identificar cuál turno quiere cancelar.
       • Luego, usá cancel_appointment para cancelarlo definitivamente.
@@ -82,6 +87,7 @@ export const tools = new ToolNode([
   identifyAppointmentToRescheduleTool,
   rescheduleAppointmentTool,
   cancelAppointmentTool,
+  suggestAvailableSlotsTool,
 ]);
 
 // NODO 3: Genera respuesta final usando los ToolMessages
