@@ -1,8 +1,15 @@
-import { parse, isBefore, endOfDay } from "date-fns";
+import { parse, isBefore, endOfDay, isValid } from "date-fns";
 import { es } from "date-fns/locale";
 
 export function parseSpanishDate(dateStr: string): Date | null {
   const today = new Date();
+
+  // 🚨 NUEVO: Si viene en formato yyyy-MM-dd, parsearlo directamente
+  const isoRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (isoRegex.test(dateStr)) {
+    const parsedISO = new Date(dateStr);
+    return isValid(parsedISO) ? parsedISO : null;
+  }
 
   const hasYear = /\d{4}/.test(dateStr);
   let fullDateStr = dateStr;
@@ -34,4 +41,4 @@ export function parseSpanishDate(dateStr: string): Date | null {
   }
 }
 
-console.log(parseSpanishDate("2 de enero"));
+console.log(parseSpanishDate("2025-05-20"));
