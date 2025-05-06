@@ -120,6 +120,22 @@ export async function generate(
     (state.messages[0].additional_kwargs as any)?.metadata?.phone ??
     "desconocido";
 
+  // ✅ Tomamos solo el último ToolMessage relevante
+  const lastToolMessage = [...state.messages]
+    .reverse()
+    .find((msg) => msg instanceof ToolMessage) as ToolMessage | undefined;
+
+  // ✅ Últimos 2 mensajes relevantes del humano o IA (sin tools)
+  const recentUserMessages = [...state.messages]
+    .reverse()
+    .filter(
+      (msg) =>
+        msg instanceof HumanMessage ||
+        (msg instanceof AIMessage && msg.tool_calls?.length === 0)
+    )
+    .slice(0, 2)
+    .reverse();
+
   const systemMessageContent =
     "Eres una asistente llamada Daiana. Respondé solo en base al contexto, sin inventar ni asumir." +
     `El número del paciente es ${phone}. No debés pedirlo.` +
@@ -135,7 +151,10 @@ export async function generate(
     "No pidas ni nombre ni email si el paciente ya está registrado." +
     "Respondé solo con herramientas. No inventes pasos." +
     "\n\n" +
-    toolMessages;
+    // toolMessages;
+    (lastToolMessage?.content
+      ? `\n\nRespuesta de la herramienta:\n${lastToolMessage.content}`
+      : "");
 
   const conversationMessages = state.messages.filter(
     (msg) =>
@@ -143,9 +162,14 @@ export async function generate(
       (msg instanceof AIMessage && msg.tool_calls?.length === 0)
   );
 
+  // const prompt = [
+  //   new SystemMessage(systemMessageContent),
+  //   ...conversationMessages,
+  // ];
+
   const prompt = [
     new SystemMessage(systemMessageContent),
-    ...conversationMessages,
+    ...recentUserMessages,
   ];
 
   const response = await llm.invoke(prompt);
