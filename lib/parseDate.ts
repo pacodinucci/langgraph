@@ -41,4 +41,4 @@ export function parseSpanishDate(dateStr: string): Date | null {
   }
 }
 
-console.log(parseSpanishDate("2025-05-20"));
+console.log(parseSpanishDate("12 de mayo"));

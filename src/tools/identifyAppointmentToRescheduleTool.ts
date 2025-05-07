@@ -1,4 +1,3 @@
-// tools/identifyAppointmentToRescheduleTool.ts
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import db from "../../lib/db";
@@ -25,9 +24,27 @@ export const identifyAppointmentToRescheduleTool = tool(
     if (date) {
       const parsedDate = parseSpanishDate(date);
       if (parsedDate) {
-        where.date = parsedDate;
+        const utcDate = new Date(
+          Date.UTC(
+            parsedDate.getFullYear(),
+            parsedDate.getMonth(),
+            parsedDate.getDate()
+          )
+        );
+        where.date = {
+          gte: utcDate,
+          lt: new Date(
+            Date.UTC(
+              parsedDate.getFullYear(),
+              parsedDate.getMonth(),
+              parsedDate.getDate() + 1
+            )
+          ),
+        };
       }
     }
+
+    console.log("WHERE --> ", where);
 
     const matchingAppointments = await db.appointment.findMany({
       where,

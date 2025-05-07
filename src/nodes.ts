@@ -21,7 +21,12 @@ import { suggestAvailableSlotsTool } from "./tools/suggestAvailableSlotsTool";
 
 // NODO 1: Decide si responde directamente o llama a un tool
 export async function queryOrRespond(
-  state: typeof MessagesAnnotation.State & { config?: { phone?: string } }
+  state: typeof MessagesAnnotation.State & {
+    config?: {
+      phone?: string;
+      appointmentId?: string;
+    };
+  }
 ) {
   const phone =
     (
@@ -73,6 +78,48 @@ export async function queryOrRespond(
 
   const response = await llmWithTools.invoke(inputMessages);
   console.log("🧠 Respuesta del modelo:", JSON.stringify(response, null, 2));
+
+  // ✅ Revisar si ya se envió la imagen antes
+  const alreadySentImage = state.messages.some((m) => {
+    if (m instanceof AIMessage && typeof m.content === "string") {
+      try {
+        const parsed = JSON.parse(m.content);
+        return (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          parsed.media ===
+            "https://res.cloudinary.com/ddtpavjz2/image/upload/v1740184470/i9ntf6ucotvy1qz9okyk.jpg"
+        );
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+
+  const alreadySelectedTreatment = state.messages.some(
+    (m) => m instanceof ToolMessage && m.name === "select_treatment"
+  );
+
+  const userMentionedDepilation = inputMessages.some(
+    (m) =>
+      m instanceof HumanMessage &&
+      typeof m.content === "string" &&
+      m.content.toLowerCase().includes("depil")
+  );
+
+  if (
+    userMentionedDepilation &&
+    !alreadySelectedTreatment &&
+    !alreadySentImage
+  ) {
+    response.content = JSON.stringify({
+      message: response.content,
+      media:
+        "https://res.cloudinary.com/ddtpavjz2/image/upload/v1740184470/i9ntf6ucotvy1qz9okyk.jpg",
+    });
+    console.log("📸 Imagen de zonas inyectada correctamente.");
+  }
 
   return { messages: [response] };
 }
@@ -151,10 +198,10 @@ export async function generate(
     "No pidas ni nombre ni email si el paciente ya está registrado." +
     "Respondé solo con herramientas. No inventes pasos." +
     "\n\n" +
-    // toolMessages;
-    (lastToolMessage?.content
-      ? `\n\nRespuesta de la herramienta:\n${lastToolMessage.content}`
-      : "");
+    toolMessages;
+  lastToolMessage?.content
+    ? `\n\nRespuesta de la herramienta:\n${lastToolMessage.content}`
+    : "";
 
   const conversationMessages = state.messages.filter(
     (msg) =>
@@ -173,5 +220,37 @@ export async function generate(
   ];
 
   const response = await llm.invoke(prompt);
+
+  // // ✅ Si el último toolMessage contiene una imagen, se adjunta
+  // if (
+  //   typeof lastToolMessage?.content === "object" &&
+  //   lastToolMessage.content !== null &&
+  //   "media" in lastToolMessage.content
+  // ) {
+  //   response.content = JSON.stringify({
+  //     message: response.content,
+  //     media: lastToolMessage.content.media,
+  //   });
+  // }
+
+  // // ✅ Si el mensaje menciona depilación láser pero aún no se confirmó el tratamiento, se adjunta la imagen
+  // const alreadySelectedTreatment = state.messages.some((m) => {
+  //   return m instanceof ToolMessage && m.name === "select_treatment";
+  // });
+
+  // if (
+  //   typeof response.content === "string" &&
+  //   response.tool_calls?.length === 0 &&
+  //   response.content.toLowerCase().includes("depilación láser") &&
+  //   !alreadySelectedTreatment
+  // ) {
+  //   console.log("Entro al bloque para mandar la imagen!!!");
+  //   response.content = JSON.stringify({
+  //     message: response.content + "\n\nEstas son las zonas disponibles:",
+  //     media:
+  //       "https://res.cloudinary.com/ddtpavjz2/image/upload/v1740184470/i9ntf6ucotvy1qz9okyk.jpg",
+  //   });
+  // }
+
   return { messages: [response] };
 }

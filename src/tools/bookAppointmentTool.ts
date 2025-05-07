@@ -101,7 +101,9 @@ export const bookAppointmentTool = tool(
 
     return `Turno reservado exitosamente para ${
       customer.name
-    } el ${parsedDate.toLocaleDateString()} a las ${hour} hs.`;
+    } el ${parsedDate.toLocaleDateString("es-AR", {
+      timeZone: "America/Argentina/Buenos_Aires",
+    })} a las ${hour} hs.`;
   },
   {
     name: "book_appointment",

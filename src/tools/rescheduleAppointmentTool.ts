@@ -79,7 +79,12 @@ export const rescheduleAppointmentTool = tool(
       });
     }
 
-    return `Tu turno fue reprogramado exitosamente para el ${parsedDate.toLocaleDateString()} a las ${newHour} hs.`;
+    return `Tu turno fue reprogramado exitosamente para el ${parsedDate.toLocaleDateString(
+      "es-AR",
+      {
+        timeZone: "America/Argentina/Buenos_Aires",
+      }
+    )} a las ${newHour} hs.`;
   },
   {
     name: "reschedule_appointment",
