@@ -80,24 +80,32 @@ export async function queryOrRespond(
   console.log("🧠 Respuesta del modelo:", JSON.stringify(response, null, 2));
 
   // ✅ Revisar si ya se envió la imagen antes
-  const alreadySentImage = state.messages.some((m) => {
-    if (m instanceof AIMessage && typeof m.content === "string") {
-      try {
-        const parsed = JSON.parse(m.content);
-        return (
-          typeof parsed === "object" &&
-          parsed !== null &&
-          parsed.media ===
-            "https://res.cloudinary.com/ddtpavjz2/image/upload/v1740184470/i9ntf6ucotvy1qz9okyk.jpg"
-        );
-      } catch {
-        return false;
-      }
-    }
-    return false;
-  });
+  let alreadySentImage = false;
+  // const alreadySentImage = state.messages.some((m) => {
+  //   if (m instanceof AIMessage && typeof m.content === "string") {
+  //     try {
+  //       const parsed = JSON.parse(m.content);
+  //       return (
+  //         typeof parsed === "object" &&
+  //         parsed !== null &&
+  //         parsed.media ===
+  //           "https://res.cloudinary.com/ddtpavjz2/image/upload/v1746713910/ChatGPT_Image_May_8_2025_11_17_24_AM_nzaurk.png"
+  //       );
+  //     } catch {
+  //       return false;
+  //     }
+  //   }
+  //   return false;
+  // });
+  // const alreadySentImage = state.messages.some((m) => {
+  //   if (m instanceof AIMessage) {
+  //     const text = typeof m.content === "string" ? m.content : "";
+  //     return text.includes("res.cloudinary.com/ddtpavjz2/image/upload");
+  //   }
+  //   return false;
+  // });
 
-  const alreadySelectedTreatment = state.messages.some(
+  let alreadySelectedTreatment = state.messages.some(
     (m) => m instanceof ToolMessage && m.name === "select_treatment"
   );
 
@@ -108,18 +116,31 @@ export async function queryOrRespond(
       m.content.toLowerCase().includes("depil")
   );
 
+  const userWantsToAddZones = inputMessages.some(
+    (m) =>
+      m instanceof HumanMessage &&
+      typeof m.content === "string" &&
+      /(agregar|sumar|añadir|cambiar|modificar).*(zona|zonas|área|area)/i.test(
+        m.content
+      )
+  );
+
   if (
-    userMentionedDepilation &&
-    !alreadySelectedTreatment &&
+    (userMentionedDepilation || userWantsToAddZones) &&
+    // !alreadySelectedTreatment &&
     !alreadySentImage
   ) {
     response.content = JSON.stringify({
       message: response.content,
       media:
-        "https://res.cloudinary.com/ddtpavjz2/image/upload/v1740184470/i9ntf6ucotvy1qz9okyk.jpg",
+        "https://res.cloudinary.com/ddtpavjz2/image/upload/v1746713910/ChatGPT_Image_May_8_2025_11_17_24_AM_nzaurk.png",
     });
+    alreadySentImage = true;
     console.log("📸 Imagen de zonas inyectada correctamente.");
   }
+
+  console.log("🖼️ Imagen ya enviada:", alreadySentImage);
+  console.log("🧔🏻‍♂️ Usuario quiere cambiar zonas:", userWantsToAddZones);
 
   return { messages: [response] };
 }

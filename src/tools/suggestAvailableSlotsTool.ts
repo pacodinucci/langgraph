@@ -1,10 +1,11 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import db from "../../lib/db";
+import { CLINIC_OPEN_HOUR, CLINIC_CLOSE_HOUR } from "../../lib/constants";
 
 const generateTimeSlots = (): string[] => {
   const slots: string[] = [];
-  for (let h = 8; h < 21; h++) {
+  for (let h = CLINIC_OPEN_HOUR; h < CLINIC_CLOSE_HOUR; h++) {
     for (let m = 0; m < 60; m += 15) {
       slots.push(
         `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
@@ -32,25 +33,6 @@ export const suggestAvailableSlotsTool = tool(
     if (specificDay) {
       const date = new Date(specificDay);
       const slots = generateTimeSlots();
-
-      // for (let i = 0; i <= slots.length - durationModules; i++) {
-      //   const candidateBlock = slots.slice(i, i + durationModules);
-
-      //   const occupied = await db.calendar.findMany({
-      //     where: {
-      //       date,
-      //       hour: { in: candidateBlock },
-      //       status: "reserved",
-      //     },
-      //   });
-
-      //   if (occupied.length === 0) {
-      //     suggestions.push({
-      //       date: date.toISOString().split("T")[0],
-      //       hour: candidateBlock[0],
-      //     });
-      //   }
-      // }
 
       for (let i = 0; i < slots.length; i++) {
         const candidateBlock = slots.slice(i, i + durationModules);
