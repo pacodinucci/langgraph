@@ -33,8 +33,30 @@ export const suggestAvailableSlotsTool = tool(
       const date = new Date(specificDay);
       const slots = generateTimeSlots();
 
-      for (let i = 0; i <= slots.length - durationModules; i++) {
+      // for (let i = 0; i <= slots.length - durationModules; i++) {
+      //   const candidateBlock = slots.slice(i, i + durationModules);
+
+      //   const occupied = await db.calendar.findMany({
+      //     where: {
+      //       date,
+      //       hour: { in: candidateBlock },
+      //       status: "reserved",
+      //     },
+      //   });
+
+      //   if (occupied.length === 0) {
+      //     suggestions.push({
+      //       date: date.toISOString().split("T")[0],
+      //       hour: candidateBlock[0],
+      //     });
+      //   }
+      // }
+
+      for (let i = 0; i < slots.length; i++) {
         const candidateBlock = slots.slice(i, i + durationModules);
+
+        // Si el bloque está incompleto (por ejemplo, solo un módulo al final del día), lo ignoramos
+        if (candidateBlock.length < durationModules) continue;
 
         const occupied = await db.calendar.findMany({
           where: {
@@ -44,6 +66,7 @@ export const suggestAvailableSlotsTool = tool(
           },
         });
 
+        // Si alguno de los slots está ocupado, no es válido
         if (occupied.length === 0) {
           suggestions.push({
             date: date.toISOString().split("T")[0],
