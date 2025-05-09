@@ -18,6 +18,8 @@ import { rescheduleAppointmentTool } from "./tools/rescheduleAppointmentTool";
 import { identifyAppointmentToRescheduleTool } from "./tools/identifyAppointmentToRescheduleTool";
 import { cancelAppointmentTool } from "./tools/cancelAppointmentTool";
 import { suggestAvailableSlotsTool } from "./tools/suggestAvailableSlotsTool";
+import { wasImageSent } from "../lib/wasImageSent";
+import { showZonesImageTool } from "./tools/showZonesImageTool";
 
 // NODO 1: Decide si responde directamente o llama a un tool
 export async function queryOrRespond(
@@ -44,6 +46,7 @@ export async function queryOrRespond(
     rescheduleAppointmentTool,
     cancelAppointmentTool,
     suggestAvailableSlotsTool,
+    showZonesImageTool,
   ]);
 
   const phoneMsg = new SystemMessage(
@@ -71,76 +74,15 @@ export async function queryOrRespond(
       • Luego, usá cancel_appointment para cancelarlo definitivamente.
     - No respondas con la llamada a identify_appointment_to_reschedule. Solo llamala y esperá la respuesta.
     - Nunca uses book_appointment para modificar o cancelar un turno existente.
-    - No inventes información ni pasos. Respondé en base a las herramientas disponibles.`
+    - No inventes información ni pasos. Respondé en base a las herramientas disponibles.
+    - Si el paciente menciona depilación láser pero no indica zonas, usá show_zones_image. No digas que vas a mostrar la imagen: simplemente llamá a la herramienta.
+    - Luego de llamar a show_zones_image no generes ningún mensaje adicional. Respondé únicamente con el contenido que devuelve esa herramienta (mensaje e imagen).`
   );
 
   const inputMessages = [phoneMsg, rulesMsg, ...state.messages];
 
   const response = await llmWithTools.invoke(inputMessages);
-  console.log("🧠 Respuesta del modelo:", JSON.stringify(response, null, 2));
-
-  // ✅ Revisar si ya se envió la imagen antes
-  let alreadySentImage = false;
-  // const alreadySentImage = state.messages.some((m) => {
-  //   if (m instanceof AIMessage && typeof m.content === "string") {
-  //     try {
-  //       const parsed = JSON.parse(m.content);
-  //       return (
-  //         typeof parsed === "object" &&
-  //         parsed !== null &&
-  //         parsed.media ===
-  //           "https://res.cloudinary.com/ddtpavjz2/image/upload/v1746713910/ChatGPT_Image_May_8_2025_11_17_24_AM_nzaurk.png"
-  //       );
-  //     } catch {
-  //       return false;
-  //     }
-  //   }
-  //   return false;
-  // });
-  // const alreadySentImage = state.messages.some((m) => {
-  //   if (m instanceof AIMessage) {
-  //     const text = typeof m.content === "string" ? m.content : "";
-  //     return text.includes("res.cloudinary.com/ddtpavjz2/image/upload");
-  //   }
-  //   return false;
-  // });
-
-  let alreadySelectedTreatment = state.messages.some(
-    (m) => m instanceof ToolMessage && m.name === "select_treatment"
-  );
-
-  const userMentionedDepilation = inputMessages.some(
-    (m) =>
-      m instanceof HumanMessage &&
-      typeof m.content === "string" &&
-      m.content.toLowerCase().includes("depil")
-  );
-
-  const userWantsToAddZones = inputMessages.some(
-    (m) =>
-      m instanceof HumanMessage &&
-      typeof m.content === "string" &&
-      /(agregar|sumar|añadir|cambiar|modificar).*(zona|zonas|área|area)/i.test(
-        m.content
-      )
-  );
-
-  if (
-    (userMentionedDepilation || userWantsToAddZones) &&
-    // !alreadySelectedTreatment &&
-    !alreadySentImage
-  ) {
-    response.content = JSON.stringify({
-      message: response.content,
-      media:
-        "https://res.cloudinary.com/ddtpavjz2/image/upload/v1746713910/ChatGPT_Image_May_8_2025_11_17_24_AM_nzaurk.png",
-    });
-    alreadySentImage = true;
-    console.log("📸 Imagen de zonas inyectada correctamente.");
-  }
-
-  console.log("🖼️ Imagen ya enviada:", alreadySentImage);
-  console.log("🧔🏻‍♂️ Usuario quiere cambiar zonas:", userWantsToAddZones);
+  // console.log("🧠 Respuesta del modelo:", JSON.stringify(response, null, 2));
 
   return { messages: [response] };
 }
@@ -156,6 +98,7 @@ export const tools = new ToolNode([
   rescheduleAppointmentTool,
   cancelAppointmentTool,
   suggestAvailableSlotsTool,
+  showZonesImageTool,
 ]);
 
 // NODO 3: Genera respuesta final usando los ToolMessages
@@ -218,6 +161,8 @@ export async function generate(
     `Verificá si el paciente está registrado usando create_customer de forma silenciosa con el número.` +
     "No pidas ni nombre ni email si el paciente ya está registrado." +
     "Respondé solo con herramientas. No inventes pasos." +
+    " Si el paciente menciona depilación láser pero no indicó zona, llamá a show_zones_image y no respondas después." +
+    " Si show_zones_image fue llamada, no generes otra respuesta. Respondé únicamente con el contenido que devuelve esa herramienta." +
     "\n\n" +
     toolMessages;
   lastToolMessage?.content
@@ -241,37 +186,6 @@ export async function generate(
   ];
 
   const response = await llm.invoke(prompt);
-
-  // // ✅ Si el último toolMessage contiene una imagen, se adjunta
-  // if (
-  //   typeof lastToolMessage?.content === "object" &&
-  //   lastToolMessage.content !== null &&
-  //   "media" in lastToolMessage.content
-  // ) {
-  //   response.content = JSON.stringify({
-  //     message: response.content,
-  //     media: lastToolMessage.content.media,
-  //   });
-  // }
-
-  // // ✅ Si el mensaje menciona depilación láser pero aún no se confirmó el tratamiento, se adjunta la imagen
-  // const alreadySelectedTreatment = state.messages.some((m) => {
-  //   return m instanceof ToolMessage && m.name === "select_treatment";
-  // });
-
-  // if (
-  //   typeof response.content === "string" &&
-  //   response.tool_calls?.length === 0 &&
-  //   response.content.toLowerCase().includes("depilación láser") &&
-  //   !alreadySelectedTreatment
-  // ) {
-  //   console.log("Entro al bloque para mandar la imagen!!!");
-  //   response.content = JSON.stringify({
-  //     message: response.content + "\n\nEstas son las zonas disponibles:",
-  //     media:
-  //       "https://res.cloudinary.com/ddtpavjz2/image/upload/v1740184470/i9ntf6ucotvy1qz9okyk.jpg",
-  //   });
-  // }
 
   return { messages: [response] };
 }

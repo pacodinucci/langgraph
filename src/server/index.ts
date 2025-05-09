@@ -145,6 +145,24 @@ app.post("/chat", async (req: Request, res: Response): Promise<void> => {
     } else {
       res.status(500).json({ error: "No AI response" });
     }
+    console.log("RESULT --> ", result);
+    // const aiResponse = result.messages.at(-1);
+    // if (aiResponse) {
+    //   conversations[sessionId].push(aiResponse);
+
+    //   try {
+    //     const parsed = JSON.parse(aiResponse.content as string);
+    //     if (typeof parsed === "object" && parsed.message) {
+    //       res.json(parsed); // ✅ Devuelve { message, media } si viene en JSON
+    //     } else {
+    //       res.json({ message: aiResponse.content }); // fallback a texto plano
+    //     }
+    //   } catch {
+    //     res.json({ message: aiResponse.content }); // fallback si no es JSON
+    //   }
+    // } else {
+    //   res.status(500).json({ error: "No AI response" });
+    // }
   } catch (err) {
     console.error("❌ Graph error:", err);
     res.status(500).json({ error: "Internal server error" });
