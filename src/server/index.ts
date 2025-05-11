@@ -85,11 +85,16 @@ app.post("/chat", async (req: Request, res: Response): Promise<void> => {
         year: "numeric",
       });
       const hour = appt.hour;
-      const treatment = appt.treatment;
+      // const treatment = appt.treatment;
+      const treatment = await db.treatment.findUnique({
+        where: { id: appt.treatmentId },
+      });
 
       upcomingAppointmentMessage = new SystemMessage(
         `INFORMACIÓN ADICIONAL:
-      - El paciente tiene un turno reservado para el ${dateStr} a las ${hour} hs para un tratamiento de ${treatment}.
+      - El paciente tiene un turno reservado para el ${dateStr} a las ${hour} hs para un tratamiento de ${
+          treatment?.name ?? "tratamiento desconocido"
+        }.
       - Si el paciente dice "hola", mencioná el turno como parte del saludo y preguntá si desea modificarlo o consultar algo más.
       - Si el paciente pregunta por su turno, respondé con esta información directamente.`
       );

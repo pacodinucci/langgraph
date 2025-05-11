@@ -11,9 +11,23 @@ const treatmentDurations: Record<string, number> = {
 };
 
 export const bookAppointmentTool = tool(
-  async ({ treatment, zones, date, hour, phone }) => {
+  async ({ treatmentId, zones, date, hour, phone }) => {
     console.log("🛠️ Intentando reservar turno para", phone);
-    console.log("Data Recibida --> ", { treatment, zones, date, hour, phone });
+    console.log("Data Recibida --> ", {
+      treatmentId,
+      zones,
+      date,
+      hour,
+      phone,
+    });
+
+    const treatment = await db.treatment.findUnique({
+      where: { id: treatmentId },
+    });
+
+    if (!treatment) {
+      return "El tratamiento es requerido para reservar turno.";
+    }
 
     const customer = await db.customer.findFirst({ where: { phone } });
     if (!customer) {
@@ -22,7 +36,7 @@ export const bookAppointmentTool = tool(
 
     zones = zones ?? [];
 
-    const modules = treatmentDurations[treatment];
+    const modules = treatment.modules;
     if (!modules) {
       return `No tengo registrada la duración para el tratamiento "${treatment}".`;
     }
@@ -70,7 +84,7 @@ export const bookAppointmentTool = tool(
     // ✅ Crear appointment
     const appointment = await db.appointment.create({
       data: {
-        treatment,
+        treatmentId,
         zones,
         date: parsedDate,
         hour,
@@ -88,7 +102,7 @@ export const bookAppointmentTool = tool(
         data: {
           date: parsedDate,
           hour: blockHour,
-          treatment,
+          treatment: treatment.name,
           status: "reserved",
           appointmentId: appointment.id,
           // professionalId,
@@ -109,9 +123,9 @@ export const bookAppointmentTool = tool(
     name: "book_appointment",
     description: "Reserva un turno para un tratamiento en la clínica.",
     schema: z.object({
-      treatment: z
+      treatmentId: z
         .string()
-        .describe("Nombre del tratamiento que el paciente quiere reservar."),
+        .describe("Id del tratamiento que el paciente quiere reservar."),
       zones: z
         .array(z.string())
         .optional()
